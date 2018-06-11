@@ -55,9 +55,9 @@ program control_cell(control_init) := {
 //Q2// absorbing
 	absorb_signal ( Q2_signal, 0.5 ); //0.5
 	q2_get := get_signal(Q2);
-	//rate ( ( 0.4 * Q2 ) ) : { Q2 := Q2 - 1}; 
+	rate ( ( 0.4 * Q2 ) ) : { Q2 := Q2 - 1}; 
 	//rate ( ( 0.4 * get_signal(Q2) ) ) : { Q2 := Q2 - 1}; 
-	rate ( ( 0.4 * q2_get ) ) : { Q2 := Q2 - 1}; 
+	//rate ( ( 0.4 * q2_get ) ) : { Q2 := Q2 - 1}; 
 	//selected : {message (1, tostring(id) <> "Q2 in control: " <> tostring(get_signal (Q2_signal)) )}	
 	
 	
@@ -74,9 +74,9 @@ program control_cell(control_init) := {
 	nq := 2;
 	Kq := 0.1;
 	
-	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (Q2 ^ nq) / ((Kq ^ nq) + (Q2 ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
+	rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (Q2 ^ nq) / ((Kq ^ nq) + (Q2 ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
 	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( ((get_signal(Q2)) ^ nq) / ((Kq ^ nq) + ((get_signal(Q2)) ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 };
-	rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
+	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
 	//degradating A:Q2//
 	delta_aq2 := 1.4; 
 	rate (delta_aq2 * A_Q2) : { A_Q2 := A_Q2 - 1 };
@@ -113,9 +113,9 @@ program target_cell(target_init) := {
 //Q1 absorbing
 	absorb_signal ( Q1_signal, 0.5 ); //0.5
 	q1_get := get_signal(Q1);
-	//rate ( ( 0.4 * Q1 ) ) : { Q1 := Q1 - 1};
+	rate ( ( 0.4 * Q1 ) ) : { Q1 := Q1 - 1};
 	//rate ( ( 0.4 * get_signal(Q1) ) ) : { Q1 := Q1 - 1};
-	rate ( ( 0.4 * q1_get ) ) : { Q1 := Q1 - 1};
+	//rate ( ( 0.4 * q1_get ) ) : { Q1 := Q1 - 1};
 	selected : {message (1, tostring(id) <> "Q1 in target: " <> tostring(get_signal (Q1_signal)) )}	
 	
 	
@@ -125,9 +125,9 @@ program target_cell(target_init) := {
 	x_c := 2;
 	nc := 2;
 	Kc := 0.015;
-	//rate (x_c_baseline + (x_c * ((Q1 ^ nc)/((Kc ^ nc) +(Q1 ^ nc))))) : { C := C + 1 };
+	rate (x_c_baseline + (x_c * ((Q1 ^ nc)/((Kc ^ nc) +(Q1 ^ nc))))) : { C := C + 1 };
 	//rate (x_c_baseline + (x_c * ((get_signal(Q1)) ^ nc)/((Kc ^ nc) +((get_signal(Q1)) ^ nc)))) : { C := C + 1 };
-	rate (x_c_baseline + (x_c * ((q1_get ^ nc)/((Kc ^ nc) +(q1_get ^ nc))))) : { C := C + 1 };
+	//rate (x_c_baseline + (x_c * ((q1_get ^ nc)/((Kc ^ nc) +(q1_get ^ nc))))) : { C := C + 1 };
 
 	//degradation C//
 	delta_C := 1.4; 
