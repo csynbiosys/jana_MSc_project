@@ -285,10 +285,10 @@ program main() := {
 		stats4 := conc4 L_C,
 		stats5 := conc5 L_B,
 		//print ("t = ", t, ", [D] = ", stats.conc_d, ", [Q1] = ", stats2.conc_q1, ", [Q2] = ", stats3.conc_q2, "\n" )
-		//print (t, ", ", stats.conc_d, ", ", stats2.conc_q1, ", ", stats3.conc_q2, "\n" )
-		//print (t, ", ", stats.conc_d, ", ", stats4.conc_c, "\n")
+		//print (t, ", ", stats.conc_d, ", ", stats2.conc_q1, ", ", stats3.conc_q2, ", ", stats4.conc_c, "\n" )
+		print (t, ", ", stats.conc_d, ", ", stats4.conc_c, "\n")
 		//print (t, ", [C] = ", stats4.conc_c, "\n")
-		print(t, ", ", stats2.conc_q1, ", ", stats5.conc_b, "\n")
+		//print(t, ", ", stats2.conc_q1, ", ", stats5.conc_b, "\n")
 	}
 	
 	true : {
@@ -298,11 +298,11 @@ program main() := {
 };
 
 //for specific cell information
-program p() := target_cell (1) +  output(1) sharing rfp;
-program r() := control_cell (1) +  output2(1) sharing gfp;
+//program p() := target_cell (1) +  output(1) sharing rfp;
+//program r() := control_cell (1) +  output2(1) sharing gfp;
 
-//ecoli ( [ x := 10, y := 0 ], program p() );
-//ecoli ( [ x := -10, y := 0 ], program r() );
+ecoli ( [ x := 10, y := 0 ], program p() );
+ecoli ( [ x := -10, y := 0 ], program r() );
 
 
 
