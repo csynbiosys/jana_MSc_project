@@ -1,27 +1,30 @@
 include gro
-set( "dt", 0.005 ); 
+set( "dt", 0.05 ); //0.005 
 t := 0;
 
 //global conc //
-B := 0;
-C := 0;
-D := 0; //0.5
-A_Q2 := 0;
 
-//Ref//
-Ref := 0.2;
+//Ref as global control//
+//Ref := 0.2;
 
-	
+	//[D]//
+fun conc1 L .
+	let d := (sumlist L) in 
+		[
+			conc_d := d / volume
+		]
+	end;
+
 	//SIGNALS: Q1 diffusion//
-Q1 := 0;
-diffusion_Q1 := 2;
+Q1 := 0.5;
+diffusion_Q1 := 2; //2
 degradation_Q1 := 0.2;
 Q1_signal := signal ( diffusion_Q1, degradation_Q1 ); // This command declares a new signal
 
 
 	//SIGNALS: Q2 diffusion//
-Q2 := 0;
-diffusion_Q2 := 2;
+Q2 := 0.5;
+diffusion_Q2 := 2; //2
 degradation_Q2 := 0.2;
 Q2_signal := signal ( diffusion_Q2, degradation_Q2 ); // This command declares a new signal
 
@@ -30,7 +33,7 @@ Q2_signal := signal ( diffusion_Q2, degradation_Q2 ); // This command declares a
 ////CONTROL cell/////
 
 program control_cell(control_init) := {
-	
+
 //always green//
 	gfp := 1000;
 	true : { gfp := volume * 100 };
@@ -38,7 +41,10 @@ program control_cell(control_init) := {
 //does not divide//
 	set("ecoli_growth_rate", 0.0);  // fL/min
 	
-	
+//
+A_Q2 := 0.0;
+B := 0.0;
+Ref := 0.1;	
 
 //Q1//
 	//synthesis of Q1//
@@ -48,22 +54,23 @@ program control_cell(control_init) := {
 	//selected : {message (1, tostring(id) <> "Q1 in CONTROL: " <> tostring(Q1) )}
 	
 	//Q1 emitting//
-	//Q1 > 0.01 : { emit_signal (Q1_signal, 2) } ; //2
+	//Q1 > 0.01 : { emit_signal (Q1_signal, 0.2) } ; //2
 	true : { emit_signal (Q1_signal, 2);  };//signal emitted at every dt interval //signal emission rate??
 
 	
 //Q2// absorbing
 	true : { absorb_signal ( Q2_signal, 0.5 ) }//0.5
-	//q2_get := get_signal(Q2);
+	q2_get := get_signal(Q2_signal);
 	//rate ( ( 0.4 * Q2 ) ) : { Q2 := Q2 - 1}; 
-	rate ( ( 0.4 * get_signal(Q2_signal) ) ) : { Q2 := Q2 - 1}; 
-	//rate ( ( 0.4 * q2_get ) ) : { Q2 := Q2 - 1}; 
+	//rate ( ( 0.004 * get_signal(Q2_signal) ) ) : { Q2 := Q2 - 1}; 
+	rate ( ( 0.4 * q2_get ) ) : { Q2 := Q2 - 1}; 
 	//selected : {message (1, tostring(id) <> "Q2 in control: " <> tostring(get_signal (Q2_signal)) )}	
 	
 	
 	
 
 // A:Q2 //
+
 	//producing A:Q2//
 	x_r_baseline := 0.1;
 	x_r := 2;
@@ -74,14 +81,15 @@ program control_cell(control_init) := {
 	nq := 2;
 	Kq := 0.1;
 	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (Q2 ^ nq) / ((Kq ^ nq) + (Q2 ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
-	rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( ((get_signal(Q2_signal)) ^ nq) / ((Kq ^ nq) + ((get_signal(Q2_signal)) ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 };
-	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
+	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( ((get_signal(Q2_signal)) ^ nq) / ((Kq ^ nq) + ((get_signal(Q2_signal)) ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 };
+	rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
 	//degradating A:Q2//
-	delta_aq2 := 1.4; 
+	delta_aq2 := 1.4; //1.4; 
 	rate (delta_aq2 * A_Q2) : { A_Q2 := A_Q2 - 1 };
 	//selected : {message (1, tostring(id) <> "A_Q2 in CONTROL: " <> tostring(A_Q2) )}
 	
 //B//
+	
 	//producing B//
 	x_b_baseline := 0.1;
 	x_b := 2;
@@ -89,15 +97,17 @@ program control_cell(control_init) := {
 	Kb := 0.5;
 	rate (x_b_baseline + (x_b * ((A_Q2 ^ nb)/((Kb ^ nb) +(A_Q2 ^ nb))))) : { B := B + 1 };
 	//degradating B//
-	delta_B := 1.4; 
+	delta_B := 1.4; //1.4;  
 	rate (delta_B * B) : { B := B - 1 };
-	//selected : {message (1, tostring(id) <> "B in CONTROL: " <> tostring(B) )}
+	selected : {message (1, tostring(id) <> "B in CONTROL: " <> tostring(B) )}
 	
-//selected : {message (1, tostring(id) <> "D in CONTROL: " <> tostring(D) )}
+selected : {message (1, tostring(id) <> "ref in CONTROL: " <> tostring(Ref) )}
 };
 
 
 
+	
+	
 ////TARGET cell////
 program target_cell(target_init) := {
 
@@ -107,43 +117,49 @@ program target_cell(target_init) := {
 	
 //does not divide//
 	set("ecoli_growth_rate", 0.0);
-	
+
+//
+C := 0.0;
+D := 0.0;
 	
 //Q1 absorbing
 	true: {absorb_signal ( Q1_signal, 0.5 ) }//0.5
-	//q1_get := get_signal(Q1);
+	q1_get := get_signal(Q1_signal);
 	//rate ( ( 0.4 * Q1 ) ) : { Q1 := Q1 - 1};
-	rate ( ( 0.4 * get_signal(Q1_signal) ) ) : { Q1 := Q1 - 1};
-	//rate ( ( 0.4 * q1_get ) ) : { Q1 := Q1 - 1};
-	selected : {message (1, tostring(id) <> "Q1 in target: " <> tostring(get_signal (Q1_signal)) )}	
+	//rate ( ( 0.004 * get_signal(Q1_signal) ) ) : { Q1 := Q1 - 1};
+	rate ( ( 0.4 * q1_get ) ) : { Q1 := Q1 - 1};
+	selected : {message (1, tostring(id) <> "Q1 in target: " <> tostring( q1_get / volume) )}	
 	
 	
 //C//
+	
 	//producing C//
 	x_c_baseline := 0.1;
 	x_c := 2;
 	nc := 2;
 	Kc := 0.015;
+	
 	//rate (x_c_baseline + (x_c * ((Q1 ^ nc)/((Kc ^ nc) +(Q1 ^ nc))))) : { C := C + 1 };
-	rate (x_c_baseline + (x_c * ((get_signal(Q1_signal)) ^ nc)/((Kc ^ nc) +((get_signal(Q1_signal)) ^ nc)))) : { C := C + 1 };
-	//rate (x_c_baseline + (x_c * ((q1_get ^ nc)/((Kc ^ nc) +(q1_get ^ nc))))) : { C := C + 1 };
+	//rate (x_c_baseline + (x_c * ((get_signal(Q1_signal)) ^ nc)/((Kc ^ nc) +((get_signal(Q1_signal)) ^ nc)))) : { C := C + 1 };
+	rate (x_c_baseline + (x_c * ((q1_get ^ nc)/((Kc ^ nc) +(q1_get ^ nc))))) : { C := C + 1 };
 
 	//degradation C//
-	delta_C := 1.4; 
+	delta_C := 1.4; //1.4;  
 	rate (delta_C * C) : { C := C - 1 };
 	
-	selected : {message (1, tostring(id) <> "C in target: " <> tostring(C) )}
+	selected : {message (1, tostring(id) <> "C in target: " <> tostring(C/volume) )}
 
 //D//
 //producing D//
-	x_d_baseline := 0.1;
-	x_d := 2;
+
+	x_d_baseline := 0.1; //0.1
+	x_d := 2; //2
 	nd := 2;
-	Kd := 5;  //0.5
+	Kd := 0.5;  //0.5
 	rate (x_d_baseline + (x_d * ((Kd ^ nd) / ((Kd ^ nd) + (C ^ nd))))) : { D := D + 1 };
 	
 	//degradation D//
-	delta_D := 1.4; 
+	delta_D := 1.4; //1.4; 
 	rate (delta_D * D) : { D := D - 1 };
 	selected : {message (1, tostring(id) <> "D in target: " <> tostring(D/volume) )}
 	
@@ -155,21 +171,24 @@ program target_cell(target_init) := {
 	//selected : {message (1, tostring(id) <> "Q1 in target: " <> tostring(get_signal(Q1_signal)) )}
 	
 	//Q2 emitting//
-	//Q2 > 0.01 : { emit_signal (Q2_signal, 2); } ; //2
+	//Q2 > 0.01 : { emit_signal (Q2_signal, 0.2); } ; //2
 	true : { emit_signal (Q2_signal, 2); }; //signal emission rate?? //signal emitted at every dt interval 
-	//selected : {message (1, tostring(id) <> "Q2 in target: " <> tostring(Q2)) }
+	
+	//selected : {message (1, tostring(id) <> "Ref in target: " <> tostring(Ref)) }
+
 
 };
 
-//output information (e.g. concentrations) for individual cells
 	//Target cell output:
 	
 program output(delta) := {
 	needs D;
 	needs rfp;
+	
+	//needs Q1;
+	//needs Q2;
 	needs C;
-	needs Q2;
-	needs Q1;
+	
   p := [ t := 0, s := 0 ];
 
   true : {
@@ -177,21 +196,25 @@ program output(delta) := {
     p.s := p.s + dt
   }
 
-  p.s >= delta : {
-    print ( id, ", ", p.t, ", ", D / volume, ", ", (get_signal(Q1)) / volume, ", ", (get_signal(Q2)) / volume, "\n" ),
-    p.s := 0
+  p.s = 0 | p.s >= delta : {
+    print (id, ", ", p.t, ", ", D / volume, ", ", C / volume, ", ", (get_signal(Q1_signal)) / volume, ", ", (get_signal(Q2_signal)) / volume, "\n" ),
+	
+	p.s := 0
   }
-};
+  
 
+};
 
 	//Control cell output:
 	
-program output2(delta) := {
+program output2(nekineki) := {
 	needs B;
 	needs gfp;
 	needs A_Q2;
-	needs Q2;
 	needs Q1;
+	needs Q2;
+	needs Ref;
+	
   r := [ t := 0, s := 0 ];
 
   true : {
@@ -199,24 +222,21 @@ program output2(delta) := {
     r.s := r.s + dt
   }
 
-  r.s >= delta : {
-    print ( "green: ", id, ", ", r.t, ", ", D / volume, ", ", (get_signal(Q1)) / volume, ", ", (get_signal(Q2)) / volume, "\n" ),
+  r.s >= nekineki : {
+   print (id, ", ", r.t, ", ", B / volume, ", ", A_Q2 / volume, ", ", (get_signal(Q1_signal)) / volume, ", ", (get_signal(Q2_signal)) / volume, ", ", Ref / volume, "\n" ),
     r.s := 0
   }
 };
 
 
-//functions for global concentrations //
 
-	//[D]//
-fun conc1 L .
-	let d := (sumlist L) in 
-		[
-			conc_d := d / volume
-		]
-	end;
-	
-	//[Q1]//
+//for specific cell information
+program r() := control_cell (1) +  output2(10) sharing B, gfp;
+program p() := target_cell (1) +  output(10) sharing D, rfp;
+
+///
+
+//[Q1]//
 fun conc2 L_Q1 .
 let q1 := (sumlist L_Q1) in 
 		[
@@ -231,79 +251,47 @@ let q2 := (sumlist L_Q2) in
 			conc_q2 := (get_signal(Q2_signal)) / volume
 		]
 	end;
-	
-//[C]//
-fun conc4 L_C .
-let c := (sumlist L_C) in 
-		[
-			conc_c := c / volume
-		]
-	end;
-	
-//[B]//
-fun conc5 L_B .
-let b := (sumlist L_B) in 
-		[
-			conc_b := b / volume
-		]
-	end;
 
-//[A_Q2]//
-fun conc6 L_A_Q2 .
-let aq2 := (sumlist L_A_Q2) in 
-		[
-			conc_aq2 := aq2 / volume
-		]
-	end;
 
-	//executes the functions to get the global concentrations//
+	
+//executes the functions to get the global concentrations//
 program main() := {
 	
 	t := 0;
-	L := {};
+
 	L_Q1 := {};
 	L_Q2 := {};
-	L_C := {};
-	L_B := {};
+
 	s := 5; //so the measurments start at t = 0
-	stats := [ conc_d := 0];
+
 	stats2 := [ conc_q1 := 0 ];
 	stats3 := [ conc_q2 := 0 ];
-	stats4 := [ conc_c := 0 ];
-	stats5 := [ conc_b := 0 ];
+
 	s >= 1 : {
 		s := 0,
-		L := maptocells D end,
+
 		L_Q1 := maptocells Q1 end,
 		L_Q2 := maptocells Q2 end,
-		L_C := maptocells C end,
-		L_B := maptocells B end,
-		stats := conc1 L,
+
 		stats2 := conc2 L_Q1,
 		stats3 := conc3 L_Q2,
-		stats4 := conc4 L_C,
-		stats5 := conc5 L_B,
-		//print ("t = ", t, ", [D] = ", stats.conc_d, ", [Q1] = ", stats2.conc_q1, ", [Q2] = ", stats3.conc_q2, "\n" )
-		print (t, ", ", stats.conc_d, ", ", stats4.conc_c, ", ", stats2.conc_q1, ", ", stats3.conc_q2, "\n" )
-		//print (t, ", ", stats.conc_d, ", ", stats4.conc_c, "\n")
-		//print (t, ", [C] = ", stats4.conc_c, "\n")
-		//print(t, ", ", stats2.conc_q1, ", ", stats5.conc_b, "\n")
+
+		//print ("t = ", t, ", [Q1] = ", stats2.conc_q1, ", [Q2] = ", stats3.conc_q2, "\n" )
+		//print (t, ", ", stats2.conc_q1, ", ", stats3.conc_q2, "\n" )
+
 	}
 	
 	true : {
 		t := t + dt,
-		s := s +dt
+		s := s + dt
 	}
 };
-
-//for specific cell information
-program p() := target_cell (1) +  output(1) sharing rfp;
-program r() := control_cell (1) +  output2(1) sharing gfp;
-
-//ecoli ( [ x := 10, y := 0 ], program p() );
-//ecoli ( [ x := -10, y := 0 ], program r() );
 
 
 
 ecoli ( [ x := -10, y := 0 ], program control_cell(1) );
-ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
+//ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
+
+//ecoli ( [ x := -10, y := 0 ], program r() );
+ecoli ( [ x := 10, y := 0 ], program p() );
+
