@@ -39,7 +39,7 @@ program control_cell(control_init) := {
 	true : { gfp := volume * 100 };
 	
 //does not divide//
-	set("ecoli_growth_rate", 0.0);  // fL/min
+	set("ecoli_growth_rate", 0.0);  
 	
 //
 A_Q2 := 0.0;
