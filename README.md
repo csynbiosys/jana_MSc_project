@@ -1,3 +1,3 @@
 # jana_MSc_project
 <br/>
-Writing the ooutput of target cell (conc. of D) into a CSV file
+Writing the output of target cell (conc. of D) into a CSV file
