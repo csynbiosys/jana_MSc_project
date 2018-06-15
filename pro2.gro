@@ -2,6 +2,8 @@ include gro
 set( "dt", 0.05 ); //0.005 
 t := 0;
 
+fp := fopen ( "/s1249498/Win7/Desktop/gro_win_beta.4/gro_win_beta.4/tutorials/example2.csv", "w" );
+
 //global conc //
 
 //Ref as global control//
@@ -37,9 +39,10 @@ program control_cell(control_init) := {
 //always green//
 	gfp := 1000;
 	true : { gfp := volume * 100 };
+
 	
 //does not divide//
-	set("ecoli_growth_rate", 0.0);  
+	set("ecoli_growth_rate", 0.0);  // fL/min
 	
 //
 A_Q2 := 0.0;
@@ -101,7 +104,7 @@ Ref := 0.1;
 	rate (delta_B * B) : { B := B - 1 };
 	selected : {message (1, tostring(id) <> "B in CONTROL: " <> tostring(B) )}
 	
-selected : {message (1, tostring(id) <> "ref in CONTROL: " <> tostring(Ref) )}
+//selected : {message (1, tostring(id) <> "ref in CONTROL: " <> tostring(Ref) )}
 };
 
 
@@ -117,10 +120,20 @@ program target_cell(target_init) := {
 	
 //does not divide//
 	set("ecoli_growth_rate", 0.0);
-
+	
 //
 C := 0.0;
-D := 0.0;
+D := 0.0;	
+
+//printing to file
+r := [ t := 0, s := 0 ];
+	
+id = 1 & r.s >= 0.0 : {
+ fprint ( fp, r.t, ", ", D , ", ", volume, "\n" ),
+ r.s := 0;
+ }
+ 
+
 	
 //Q1 absorbing
 	true: {absorb_signal ( Q1_signal, 0.5 ) }//0.5
@@ -176,122 +189,12 @@ D := 0.0;
 	
 	//selected : {message (1, tostring(id) <> "Ref in target: " <> tostring(Ref)) }
 
-
+true : {
+ r.t := r.t + dt,
+ r.s := r.s + dt
+ }
+	
 };
-
-	//Target cell output:
-	
-program output(delta) := {
-	needs D;
-	needs rfp;
-	
-	//needs Q1;
-	//needs Q2;
-	needs C;
-	
-  p := [ t := 0, s := 0 ];
-
-  true : {
-    p.t := p.t + dt,
-    p.s := p.s + dt
-  }
-
-  p.s = 0 | p.s >= delta : {
-    print (id, ", ", p.t, ", ", D / volume, ", ", C / volume, ", ", (get_signal(Q1_signal)) / volume, ", ", (get_signal(Q2_signal)) / volume, "\n" ),
-	
-	p.s := 0
-  }
-  
-
-};
-
-	//Control cell output:
-	
-program output2(nekineki) := {
-	needs B;
-	needs gfp;
-	needs A_Q2;
-	needs Q1;
-	needs Q2;
-	needs Ref;
-	
-  r := [ t := 0, s := 0 ];
-
-  true : {
-    r.t := r.t + dt,
-    r.s := r.s + dt
-  }
-
-  r.s >= nekineki : {
-   print (id, ", ", r.t, ", ", B / volume, ", ", A_Q2 / volume, ", ", (get_signal(Q1_signal)) / volume, ", ", (get_signal(Q2_signal)) / volume, ", ", Ref / volume, "\n" ),
-    r.s := 0
-  }
-};
-
-
-
-//for specific cell information
-program r() := control_cell (1) +  output2(10) sharing B, gfp;
-program p() := target_cell (1) +  output(10) sharing D, rfp;
-
-///
-
-//[Q1]//
-fun conc2 L_Q1 .
-let q1 := (sumlist L_Q1) in 
-		[
-			conc_q1 := (get_signal(Q1_signal)) / volume
-		]
-	end;
-	
-	//[Q2]//
-fun conc3 L_Q2 .
-let q2 := (sumlist L_Q2) in 
-		[
-			conc_q2 := (get_signal(Q2_signal)) / volume
-		]
-	end;
-
-
-	
-//executes the functions to get the global concentrations//
-program main() := {
-	
-	t := 0;
-
-	L_Q1 := {};
-	L_Q2 := {};
-
-	s := 5; //so the measurments start at t = 0
-
-	stats2 := [ conc_q1 := 0 ];
-	stats3 := [ conc_q2 := 0 ];
-
-	s >= 1 : {
-		s := 0,
-
-		L_Q1 := maptocells Q1 end,
-		L_Q2 := maptocells Q2 end,
-
-		stats2 := conc2 L_Q1,
-		stats3 := conc3 L_Q2,
-
-		//print ("t = ", t, ", [Q1] = ", stats2.conc_q1, ", [Q2] = ", stats3.conc_q2, "\n" )
-		//print (t, ", ", stats2.conc_q1, ", ", stats3.conc_q2, "\n" )
-
-	}
-	
-	true : {
-		t := t + dt,
-		s := s + dt
-	}
-};
-
-
 
 ecoli ( [ x := -10, y := 0 ], program control_cell(1) );
-//ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
-
-//ecoli ( [ x := -10, y := 0 ], program r() );
-ecoli ( [ x := 10, y := 0 ], program p() );
-
+ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
