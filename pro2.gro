@@ -5,7 +5,12 @@ t := 0;
 //global conc //
 
 //Ref as global control//
-//Ref := 0.2;
+//Ref := 0.5;
+
+
+//ref_s := signal(5, 0.001);
+//set_signal (ref_s, -30, 0, 1);
+
 
 	//[D]//
 fun conc1 L .
@@ -39,7 +44,7 @@ program control_cell(control_init) := {
 	true : { gfp := volume * 100 };
 	
 //does not divide//
-	set("ecoli_growth_rate", 0.0);  
+	set("ecoli_growth_rate", 0.0);  // fL/min
 	
 //
 A_Q2 := 0.0;
@@ -63,10 +68,13 @@ Ref := 0.1;
 	q2_get := get_signal(Q2_signal);
 	//rate ( ( 0.4 * Q2 ) ) : { Q2 := Q2 - 1}; 
 	//rate ( ( 0.004 * get_signal(Q2_signal) ) ) : { Q2 := Q2 - 1}; 
-	rate ( ( 0.4 * q2_get ) ) : { Q2 := Q2 - 1}; 
+	rate ( ( 0.4 * q2_get ) ) : { q2_get := q2_get - 1}; 
 	//selected : {message (1, tostring(id) <> "Q2 in control: " <> tostring(get_signal (Q2_signal)) )}	
-	
-	
+
+
+//in control program
+	//true : { absorb_signal ( ref_s, 1 ) }
+	//ref_get := get_signal(ref_s);
 	
 
 // A:Q2 //
@@ -83,6 +91,9 @@ Ref := 0.1;
 	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (Q2 ^ nq) / ((Kq ^ nq) + (Q2 ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
 	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( ((get_signal(Q2_signal)) ^ nq) / ((Kq ^ nq) + ((get_signal(Q2_signal)) ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 };
 	rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (Ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
+	
+	//rate ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (ref_get ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2_get ^ nq) / ((Kq ^ nq) + (q2_get ^ nq)) ))) ) : { A_Q2 := A_Q2 + 1 } ;
+	
 	//degradating A:Q2//
 	delta_aq2 := 1.4; //1.4; 
 	rate (delta_aq2 * A_Q2) : { A_Q2 := A_Q2 - 1 };
@@ -99,11 +110,10 @@ Ref := 0.1;
 	//degradating B//
 	delta_B := 1.4; //1.4;  
 	rate (delta_B * B) : { B := B - 1 };
-	selected : {message (1, tostring(id) <> "B in CONTROL: " <> tostring(B) )}
+	//selected : {message (1, tostring(id) <> "B in CONTROL: " <> tostring(B) )}
 	
 selected : {message (1, tostring(id) <> "ref in CONTROL: " <> tostring(Ref) )}
 };
-
 
 
 	
@@ -127,7 +137,7 @@ D := 0.0;
 	q1_get := get_signal(Q1_signal);
 	//rate ( ( 0.4 * Q1 ) ) : { Q1 := Q1 - 1};
 	//rate ( ( 0.004 * get_signal(Q1_signal) ) ) : { Q1 := Q1 - 1};
-	rate ( ( 0.4 * q1_get ) ) : { Q1 := Q1 - 1};
+	rate ( ( 0.4 * q1_get ) ) : { q1_get := q1_get - 1};
 	selected : {message (1, tostring(id) <> "Q1 in target: " <> tostring( q1_get / volume) )}	
 	
 	
@@ -179,6 +189,9 @@ D := 0.0;
 
 };
 
+set ( "D_saturation_max", 2 );
+set ( "D_saturation_min", 0.2 );
+
 	//Target cell output:
 	
 program output(delta) := {
@@ -196,7 +209,7 @@ program output(delta) := {
     p.s := p.s + dt
   }
 
-  p.s = 0 | p.s >= delta : {
+  p.s = 1 | p.s >= delta : {
     print (id, ", ", p.t, ", ", D / volume, ", ", C / volume, ", ", (get_signal(Q1_signal)) / volume, ", ", (get_signal(Q2_signal)) / volume, "\n" ),
 	
 	p.s := 0
@@ -255,37 +268,50 @@ let q2 := (sumlist L_Q2) in
 
 	
 //executes the functions to get the global concentrations//
-program main() := {
+//program main() := {
 	
-	t := 0;
+//	t := 0;
 
-	L_Q1 := {};
-	L_Q2 := {};
+//	L_Q1 := {};
+//	L_Q2 := {};
 
-	s := 5; //so the measurments start at t = 0
+//	s := 5; //so the measurments start at t = 0
 
-	stats2 := [ conc_q1 := 0 ];
-	stats3 := [ conc_q2 := 0 ];
+//	stats2 := [ conc_q1 := 0 ];
+//	stats3 := [ conc_q2 := 0 ];
 
-	s >= 1 : {
-		s := 0,
+//	s >= 1 : {
+//		s := 0,
 
-		L_Q1 := maptocells Q1 end,
-		L_Q2 := maptocells Q2 end,
+//		L_Q1 := maptocells Q1 end,
+//		L_Q2 := maptocells Q2 end,
 
-		stats2 := conc2 L_Q1,
-		stats3 := conc3 L_Q2,
+//		stats2 := conc2 L_Q1,
+//		stats3 := conc3 L_Q2,
 
 		//print ("t = ", t, ", [Q1] = ", stats2.conc_q1, ", [Q2] = ", stats3.conc_q2, "\n" )
 		//print (t, ", ", stats2.conc_q1, ", ", stats3.conc_q2, "\n" )
 
-	}
+//	}
 	
-	true : {
-		t := t + dt,
-		s := s + dt
-	}
-};
+//	true : {
+//		t := t + dt,
+//		s := s + dt
+//	}
+//};
+
+//program main() := {
+//	t := 0;
+//	true : { t := t + dt };
+	
+//	t > 600 : {
+//    t := 0,
+ //   Ref := 5,
+ //   clear_messages(1),
+ //   message ( 1, "Ref at " <> tostring(Ref) )
+ // };
+//};
+
 
 
 
@@ -294,4 +320,3 @@ ecoli ( [ x := -10, y := 0 ], program control_cell(1) );
 
 //ecoli ( [ x := -10, y := 0 ], program r() );
 ecoli ( [ x := 10, y := 0 ], program p() );
-
