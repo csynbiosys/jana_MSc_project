@@ -88,7 +88,7 @@ x_a_baseline1 := 0.1;
 x_a1 := 2;
 nq1 := 2;
 Kq1 := 0.1;
-delta_aq21 := 1.4;
+delta_aq21 := 1.4; // 1.4
 
 
 //B
@@ -96,15 +96,15 @@ x_b_baseline1 := 0.1;
 x_b1 := 2;
 nb1 := 2;
 Kb1 := 0.5;
-delta_B1 := 1.4;
+delta_B1 := 1.4; // 1.4
 
 //Q1
 KQ11 := 0.05;
-delta_q11 := 0.4;
+delta_q11 := 0.4; // 0.4
 
 
 //Q2
-delta_q21 := 0.4;
+delta_q21 := 0.4; // 0.4
 
 //Q2// absorbing
 	true : { absorb_signal ( Q2_signal, 0.5 ) }//0.5
@@ -118,14 +118,14 @@ delta_q21 := 0.4;
 r := [ t := 0, s := 0 ];
 
 
-true: {	A_Q2 := A_Q2 + dt * A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 ref_sig x_a_baseline1 x_a1 nq1 Kq1 Q2_signal,
-		//A_Q2 := A_Q2 + dt * A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 Ref x_a_baseline1 x_a1 nq1 Kq1 Q2_signal,
-		A_Q2 := A_Q2 - dt *A_Q2_degradation delta_aq21 A_Q2, 
-		B := B + dt * B_synthesis x_b_baseline1 x_b1 A_Q2 nb1 Kb1,
-		B := B - dt * B_degradation delta_B1 B,
-		Q1 := Q1 + dt * Q1_synthesis KQ11 B ,
-		Q1 := Q1 - dt * Q1_degradation delta_q11 Q1,
-		//Q2 := Q2 - dt * Q2_controller_degrdation delta_q21 Q2_signal //is it ever really a Q2 molecule??
+true: {	A_Q2 := A_Q2 + dt * (A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 ref_sig x_a_baseline1 x_a1 nq1 Kq1 Q2_signal),
+		//A_Q2 := A_Q2 + dt * (A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 Ref x_a_baseline1 x_a1 nq1 Kq1 Q2_signal),
+		A_Q2 := A_Q2 - dt * (A_Q2_degradation delta_aq21 A_Q2), 
+		B := B + dt * (B_synthesis x_b_baseline1 x_b1 A_Q2 nb1 Kb1),
+		B := B - dt * (B_degradation delta_B1 B),
+		Q1 := Q1 + dt * (Q1_synthesis KQ11 B) ,
+		Q1 := Q1 - dt * (Q1_degradation delta_q11 Q1),
+		//Q2 := Q2 - dt * (Q2_controller_degrdation delta_q21 Q2_signal) //is it ever really a Q2 molecule??
 		}
 
 
@@ -134,20 +134,12 @@ true: {	A_Q2 := A_Q2 + dt * A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 ref_sig x_
 //Q1 emitting//
 true : { emit_signal (Q1_signal, Q1 * 0.5);  };//signal emitted at every dt interval //signal emission rate??
 //true : { emit_signal (Q1_signal, 2);  };
+//B > 0.20 : {emit_signal (Q1_signal, Q1 * 0.5);}
 
-//r.t < 300: {
-//		Ref := 0.5,
-//		clear_messages(1),
-//		message ( 1, "Ref is: " <> tostring(Ref))
-//		};
-//	r.t > 301 & r.t < 700 : {
-//		Ref := 50,
-//		clear_messages(1),
-//		message ( 1, "Ref is: " <> tostring(Ref))
-//		};
+
 
 //id = 0 & r.s >= 0.0 : {
-	//fprint ( fp, r.t, ", ", A_Q2 / volume , ", ", B / volume, ", ", Q1 / volume, ", ", get_signal(ref_sig), "\n" ),
+	//fprint ( fp, r.t, ", ", A_Q2 / volume , ", ", B / volume, ", ", Q1 / volume, ", ", get_signal(ref_sig) / volume, "\n" ),
 	//fprint ( fp, r.t, ", ", Ref / volume, "\n" ),
 	//fprint ( fp, r.t, ", ", get_signal(Q2_signal) /  volume, "\n"),
 	//r.s := 0;
@@ -182,21 +174,21 @@ x_c_baseline1 := 0.1;
 x_c1 := 2;
 nc1 := 2;
 Kc1 := 0.015;
-delta_c1 := 1.4;
+delta_c1 := 1.4; // 1.4
 
 //D
 x_d_baseline1 := 0.1;
 x_d1 := 2;
 nd1 := 2;
-Kd1 := 0.015;
-delta_d1 := 1.4;
+Kd1 := 0.5;
+delta_d1 := 1.4; // 1.4
 
 //Q2
 KQ21 := 0.05;
-delta_q21 := 0.4;
+delta_q21 := 0.4; // 0.4
 
 //Q1
-delta_q11 := 0.4;
+delta_q11 := 0.4; // 0.4
 
 r := [ t := 0, s := 0 ];
 
@@ -217,6 +209,7 @@ true: { C := C + dt * C_synthesis x_c_baseline1 x_c1 Q1_signal nc1 Kc1,
 //Q2 emitting//
 true : { emit_signal (Q2_signal, Q2 * 0.5);  };//signal emitted at every dt interval //signal emission rate??
 //true : { emit_signal (Q2_signal, 2);  };
+D > 0.20 : {emit_signal (Q2_signal, Q2 * 0.5);}
 
 id = 1 & r.s >= 0.0 : {
 	fprint ( fp, r.t, ", ", D / volume , ", ", C / volume, ", ", get_signal(Q1_signal) / volume, ", ", Q2/volume, "\n" ),
@@ -233,13 +226,25 @@ true : {
 
 
 program main() := {
+ //true : {
+ //set_signal(ref_sig,-15,0,0) //signal, x coordinate, y coordinate, amount of signal released
+ //}
+ 
+ r := [ t := 0, s := 0 ];
+ 
  true : {
- set_signal(ref_sig,-15,0,0.5) //signal, x coordinate, y coordinate, amount of signal released
- }
+ r.t := r.t + dt,
+ r.s := r.s + dt
+ };
+ 
+	r.t < 300: {
+		set_signal(ref_sig,-15,0,0.5)
+		};
+	r.t > 301 & r.t < 700 : {
+		set_signal(ref_sig,-15,0,50)
+		};
 };
 
 
 ecoli ( [ x := -10, y := 0 ], program control_cell(1) );
 ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
-
-
