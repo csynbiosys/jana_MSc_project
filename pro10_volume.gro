@@ -1,0 +1,277 @@
+include gro
+set( "dt", 0.05 ); //0.005 
+
+
+//writing to file
+fp := fopen ( "/s1249498/Win7/Desktop/gro_win_beta.4/gro_win_beta.4/tutorials/example2.csv", "w" );
+
+
+
+
+//functions
+//B
+fun B_synthesis x_b_baseline x_b a_q2 nb Kb . (x_b_baseline + (x_b * ((a_q2 ^ nb)/((Kb ^ nb) +(a_q2 ^ nb)))));
+fun B_degradation delta_B b . (delta_B * b);
+	
+	
+//A_Q2
+fun A_Q2_synthesis x_r_baseline x_r Kr nr ref x_a_baseline x_a nq Kq q2 . ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + ((get_signal(ref)) ^ nr)) ))) * (x_a_baseline + (x_a * ( (get_signal(q2) ^ nq) / ((Kq ^ nq) + (get_signal(q2) ^ nq)) ))) ) ;
+fun A_Q2_degradation delta_aq2 a_q2 . (delta_aq2 * a_q2);
+//fun A_Q2_synthesis x_r_baseline x_r Kr nr ref x_a_baseline x_a nq Kq q2. ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (q2 ^ nq) / ((Kq ^ nq) + (q2 ^ nq)) ))) ) ;
+//fun A_Q2_synthesis x_r_baseline x_r Kr nr ref x_a_baseline x_a nq Kq q2. ( (x_r_baseline + (x_r * ( (Kr ^ nr) / ((Kr ^ nr) + (ref ^ nr)) ))) * (x_a_baseline + (x_a * ( (((get_signal(q2)) ^ nq) / ((Kq ^ nq) + ((get_signal(q2)) ^ nq)) ))) )) ;
+
+
+//C
+fun C_synthesis x_c_baseline x_c q1 nc Kc . (x_c_baseline + (x_c * ((get_signal(q1) ^ nc)/((Kc ^ nc) + (get_signal(q1) ^ nc)))));
+fun C_degradation delta_c c . (delta_c * c);
+//fun C_synthesis x_c_baseline x_c q1 nc Kc . (x_c_baseline + (x_c * ((q1 ^ nc)/((Kc ^ nc) +(q1 ^ nc)))));
+
+//D
+fun D_synthesis x_d_baseline x_d Kd nd c . (x_d_baseline + (x_d * ((Kd ^ nd) / ((Kd ^ nd) + (c ^ nd)))));
+fun D_degradation delta_d d . (delta_d * d);
+
+//Q1
+fun Q1_synthesis KQ1 b . (KQ1 * b);
+fun Q1_degradation delta_q1 q1 . (delta_q1 * q1);
+fun Q1_target_degrdation delta_q1 q1 . (delta_q1 * (get_signal(q1)));
+
+//Q2
+fun Q2_synthesis KQ2 d . (KQ2 * d);
+fun Q2_degradation delta_q2 q2 . (delta_q2 * q2);
+fun Q2_controller_degrdation delta_q2 q2 . (delta_q2 * (get_signal(q2)));
+
+
+
+	//SIGNALS: Q1 diffusion//
+
+diffusion_Q1 := 2; //2
+degradation_Q1 := 0.2;
+Q1_signal := signal ( degradation_Q1, diffusion_Q1 ); // This command declares a new signal
+
+
+	//SIGNALS: Q2 diffusion//
+
+diffusion_Q2 := 2; //2
+degradation_Q2 := 0.2;
+Q2_signal := signal ( degradation_Q2, diffusion_Q2 ); // This command declares a new signal
+
+
+	//Ref as global control//
+ref_sig := signal(0.2, 2); //diffussion rate = 2
+//Ref := 5;
+
+//D signal
+//D_sig := signal(0.2, 2);
+
+//program
+
+////CONTROL cell/////
+program control_cell(control_init) := {
+
+//always green//
+	gfp := 1000;
+	true : { gfp := volume * 100 };
+
+	
+//does not divide//
+	set("ecoli_growth_rate", 0.0);  // fL/min
+	
+//initial
+A_Q2 := 1.3; //0.5;
+B := 1.3; //0.5;
+//Ref := 15;	
+Q1 := 1.3; //0.5;
+//Q2 := 0.0;	
+	
+//A_Q2
+x_r_baseline1 := 0.1*2.35;
+x_r1 := 2*2.35;
+nr1 := 2;
+Kr1 := 0.5*2.35; //1*2.35
+x_a_baseline1 := 0.1*2.35;
+x_a1 := 2*2.35;
+nq1 := 2;
+Kq1 := 0.1*2.35;
+delta_aq21 := 1.4; // 1.4
+
+
+//B
+x_b_baseline1 := 0.1*2.35;
+x_b1 := 2*2.35;
+nb1 := 2;
+Kb1 := 0.5*2.35;
+delta_B1 := 1.4; // 1.4
+
+//Q1
+KQ11 := 0.05; //0.05;
+delta_q11 := 0.04; // 0.4
+
+
+//Q2
+delta_q21 := 0.04; // 0.4
+
+//Q2// absorbing
+	//true : { absorb_signal ( Q2_signal, 0.5 ) }//0.5
+	//Q2 := get_signal(Q2_signal);
+	//q2_get := get_signal(Q2_signal);
+
+//Ref//
+	//true : { absorb_signal ( ref_sig, 4 ) }//1
+	//ref_get := get_signal(ref_sig);
+
+r := [ t := 0, s := 0 ];
+
+
+true: {	//absorb_signal ( ref_sig, ( get_signal(ref_sig) * 0.5 ) ),
+		absorb_signal ( ref_sig, 5),
+		absorb_signal ( Q2_signal, ( get_signal(Q2_signal) * 0.5 )),
+		//absorb_signal ( Q2_signal, 5),
+		A_Q2 := A_Q2 + dt * (A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 ref_sig x_a_baseline1 x_a1 nq1 Kq1 Q2_signal),
+		//A_Q2 := A_Q2 + dt * (A_Q2_synthesis x_r_baseline1 x_r1 Kr1 nr1 Ref x_a_baseline1 x_a1 nq1 Kq1 Q2_signal),
+		A_Q2 := A_Q2 - dt * (A_Q2_degradation delta_aq21 A_Q2), 
+		B := B + dt * (B_synthesis x_b_baseline1 x_b1 A_Q2 nb1 Kb1),
+		B := B - dt * (B_degradation delta_B1 B),
+		Q1 := Q1 + dt * (Q1_synthesis KQ11 B) ,
+		Q1 := Q1 - dt * (Q1_degradation delta_q11 Q1),
+		//Q2 := Q2 - dt * (Q2_controller_degrdation delta_q21 Q2_signal), //is it ever really a Q2 molecule??
+		emit_signal (Q1_signal, Q1 * 5)
+		}
+
+
+		
+		
+//Q1 emitting//
+//true : { emit_signal (Q1_signal, Q1 * 0.5);  };//signal emitted at every dt interval //signal emission rate?? 
+//true : { emit_signal (Q1_signal, 2);  };
+//B > 0.20 : {emit_signal (Q1_signal, Q1 * 0.5);}
+
+
+//id = 0 & r.s >= 0.0 : {
+//	fprint ( fp, r.t, ", ", A_Q2 / volume , ", ", B / volume, ", ", Q1 / volume, ", ", get_signal(ref_sig) / volume, ", ", get_signal(Q2_signal) / volume, "\n" ),
+	//fprint ( fp, r.t, ", ", Ref / volume, "\n" ),
+	//fprint ( fp, r.t, ", ", get_signal(Q2_signal) /  volume, "\n"),
+//	r.s := 0;
+//};
+
+true : {
+ r.t := r.t + dt,
+ r.s := r.s + dt
+ }
+	
+};
+
+
+////TARGET cell////
+program target_cell(target_init) := {
+
+//always red//
+	rfp := 1000;
+	true : { rfp := volume * 100 };
+	
+//does not divide//
+	set("ecoli_growth_rate", 0.0);
+
+//
+C := 1.3; //0.5;
+D := 1.3; //0.5;	
+//Q1 := 0.0;
+Q2 := 1.3; //0.5;
+
+//C	
+x_c_baseline1 := 0.1*2.35;
+x_c1 := 2*2.35;
+nc1 := 2;
+Kc1 := 0.005*2.35; //0.015*2.35; 
+delta_c1 := 1.4; // 1.4
+
+//D
+x_d_baseline1 := 0.1*2.35;
+x_d1 := 2*2.35;
+nd1 := 2;
+Kd1 :=  0.5*2.35; //0.5*2.35;
+delta_d1 := 1.4; // 1.4
+
+//Q2
+KQ21 := 0.05; //0.05;
+delta_q21 := 0.04; // 0.4
+
+//Q1
+delta_q11 := 0.04; //0.4
+
+r := [ t := 0, s := 0 ];
+
+//Q1 absorbing
+	//true: {absorb_signal ( Q1_signal, 0.5 ) }//2 cuz cell diffusion in paper 2 (so diffuses out and in with the same rate)//0.5
+	//q1_get := get_signal(Q1_signal);
+
+
+true: { absorb_signal ( Q1_signal, ( get_signal(Q1_signal) * 0.5 )),
+		//absorb_signal ( Q1_signal, 5 ),
+		C := C + dt * (C_synthesis x_c_baseline1 x_c1 Q1_signal nc1 Kc1),
+		C := C - dt * (C_degradation delta_c1 C),
+		D := D + dt * (D_synthesis x_d_baseline1 x_d1 Kd1 nd1 C),
+		D := D - dt * (D_degradation delta_d1 D ),
+		Q2 := Q2 + dt * (Q2_synthesis KQ21 D ),
+		Q2 := Q2 - dt * (Q2_degradation delta_q21 Q2),
+		//Q1 := Q1 - dt * (Q1_target_degrdation delta_q11 Q1_signal),
+		emit_signal (Q2_signal, Q2 * 5),
+		//emit_signal (D_sig, D * 5)
+		}
+
+		
+//Q2 emitting//
+//true : { emit_signal (Q2_signal, Q2 * 0.5);  };//signal emitted at every dt interval //signal emission rate??
+//true : { emit_signal (Q2_signal, 2);  };
+//D > 0.20 : {emit_signal (Q2_signal, Q2 * 0.5);}
+
+id = 1 & r.s >= 0.0 : {
+	fprint ( fp, r.t, ", ", D / volume , ", ", C / volume, ", ", (( get_signal(Q1_signal) ) / volume ), ", ", Q2/volume, "\n" ),
+	//fprint ( fp, r.t, ", ", q1_get / volume, ", ", get_signal(Q1_signal) / volume, "\n" ),
+	r.s := 0;
+};
+
+true : {
+ r.t := r.t + dt,
+ r.s := r.s + dt
+ }
+};
+
+
+
+program main() := {
+ //Fig 3 set up:
+ //true : {
+ //set_signal(ref_sig,-15,0,12) //signal, x coordinate, y coordinate, amount of signal released
+ //}
+ 
+ //Fig 4 set up:
+ r := [ t := 0, s := 0 ];
+ 
+ true : {
+ r.t := r.t + dt,
+ r.s := r.s + dt
+ };
+
+// holds the concentration at (x,y) for time t at a set concentration 
+	r.t <= 300: {
+		set_signal(ref_sig,-15,0,0.0)
+	};
+	r.t >= 300.05 & r.t <= 600 : {
+		set_signal(ref_sig,-15,0,1.5)		
+	};
+	r.t >= 600 & r.t <= 900 : {
+		set_signal(ref_sig,-15,0,3.0)		
+	};
+	r.t >= 900 & r.t <= 1500 : {
+		set_signal(ref_sig,-15,0,2.0)		
+	};
+	
+	
+	
+};
+
+
+ecoli ( [ x := -10, y := 0 ], program control_cell(1) );
+ecoli ( [ x := 10, y := 0 ], program target_cell(1) );
+
+
