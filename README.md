@@ -6,3 +6,5 @@ The repository contains: <br />
 2.) python_code.ipynb -> python code written in jupyter notebook which contains the ODEs that represent the behaviour of the cells. 
 <br />
 3.) 16_7.xlsx -> Excel file with graphs
+<br />
+4.) popuation1.gro --> an attempt at modeling the population 
