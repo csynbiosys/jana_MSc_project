@@ -1,9 +1,9 @@
 include gro
 set( "dt", 0.5 ); //0.005 
 
-chemostat ( true );
-set ( "chemostat_width", 500 );
-set ( "chemostat_height", 200 );
+//chemostat ( true );
+//set ( "chemostat_width", 500 );
+//set ( "chemostat_height", 200 );
 
 //writing to file
 fp := fopen ( "/s1249498/Win7/Desktop/gro_win_beta.4/gro_win_beta.4/tutorials/example2.csv", "w" );
@@ -249,6 +249,14 @@ r.t >= 0.0 : {
 	//r.t := 0; //idk if i need this
 };
 
+/////////////
+//D / volume < 0.3 & r.t > 150 : {
+  // die()
+ //}
+ 
+ rate (01*get_signal(Q1_signal)) :{ die() }
+/////////////
+
 true : {
  r.t := r.t + dt,
  r.s := r.s + dt
@@ -258,7 +266,7 @@ true : {
 program main() := {
  //Fig 3 set up:
  true : {
- set_signal(ref_sig,-15,0,12) //signal, x coordinate, y coordinate, amount of signal released
+ set_signal(ref_sig,-15,0,0.0) //signal, x coordinate, y coordinate, amount of signal released
  };
  
  //Fig 4 set up:
